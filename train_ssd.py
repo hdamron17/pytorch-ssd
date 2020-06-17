@@ -4,6 +4,8 @@ import logging
 import sys
 import itertools
 
+from tqdm import tqdm
+
 import torch
 from torch.utils.data import DataLoader, ConcatDataset
 from torch.optim.lr_scheduler import CosineAnnealingLR, MultiStepLR
@@ -113,7 +115,7 @@ def train(loader, net, criterion, optimizer, device, debug_steps=100, epoch=-1):
     running_loss = 0.0
     running_regression_loss = 0.0
     running_classification_loss = 0.0
-    for i, data in enumerate(loader):
+    for i, data in tqdm(enumerate(loader)):
         images, boxes, labels = data
         images = images.to(device)
         boxes = boxes.to(device)

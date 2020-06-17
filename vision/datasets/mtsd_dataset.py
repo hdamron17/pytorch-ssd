@@ -21,7 +21,8 @@ class MapillaryTrafficSignsDataset:
         self.convert_label = convert_label
 
         if split_file is None:
-            split_file = f"{self.root}/splits/{self.dataset_type}.txt"
+            # split_file = f"{self.root}/splits/{self.dataset_type}.txt"
+            split_file = f"models/{self.dataset_type}_relevant.txt"
         with open(split_file, 'r') as f:
             self.ids = list(map(str.strip, f.readlines()))
 
@@ -39,10 +40,10 @@ class MapillaryTrafficSignsDataset:
             if label is None:
                 continue
             b = copy(obj['bbox'])
-            boxes.append(np.array([b['xmin'], b['ymin'], b['xmax'], b['ymax']]))
+            boxes.append(np.array([b['xmin'], b['ymin'], b['xmax'], b['ymax']], dtype=np.float32))
             labels.append(copy(label))
 
-        boxes = np.array(boxes, dtype=np.float32)
+        boxes = np.array(boxes)
         labels = np.array(labels, dtype=np.int64)
 
         image = self._read_image(id)
