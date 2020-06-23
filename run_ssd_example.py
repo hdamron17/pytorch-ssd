@@ -40,27 +40,28 @@ elif net_type == 'mb1-ssd':
 elif net_type == 'mb1-ssd-lite':
     predictor = create_mobilenetv1_ssd_lite_predictor(net, candidate_size=200)
 elif net_type == 'mb2-ssd-lite':
-    predictor = create_mobilenetv2_ssd_lite_predictor(net, candidate_size=200)
+    predictor = create_mobilenetv2_ssd_lite_predictor(net, candidate_size=200, nms_method="soft")  # TODO this still is not optimal
 elif net_type == 'sq-ssd-lite':
     predictor = create_squeezenet_ssd_lite_predictor(net, candidate_size=200)
 else:
     predictor = create_vgg_ssd_predictor(net, candidate_size=200)
 
+print(image_path)
 orig_image = cv2.imread(image_path)
 image = cv2.cvtColor(orig_image, cv2.COLOR_BGR2RGB)
 boxes, labels, probs = predictor.predict(image, 10, 0.4)
 
 for i in range(boxes.size(0)):
     box = list(map(int, boxes[i, :]))
-    cv2.rectangle(orig_image, (box[0], box[1]), (box[2], box[3]), (255, 255, 0), 4)
+    cv2.rectangle(orig_image, (box[0], box[1]), (box[2], box[3]), (255, 255, 0), 8)
     #label = f"""{voc_dataset.class_names[labels[i]]}: {probs[i]:.2f}"""
     label = f"{class_names[labels[i]]}: {probs[i]:.2f}"
     cv2.putText(orig_image, label,
                 (box[0] + 20, box[1] + 40),
                 cv2.FONT_HERSHEY_SIMPLEX,
-                1,  # font scale
+                2,  # font scale
                 (255, 0, 255),
-                2)  # line type
+                5)  # line type
 path = "run_ssd_example_output.jpg"
 cv2.imwrite(path, orig_image)
 print(f"Found {len(probs)} objects. The output image is {path}")
