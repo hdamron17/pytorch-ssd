@@ -23,6 +23,6 @@ with open(output, 'w+') as ofile:
             continue
         anno = json.load(open(anno_file, 'r'))
         labels = (obj["label"] for obj in anno["objects"])
-        classes = list(filter(None, map(dflt.convert_label, labels)))
+        classes = list(filter(lambda x: x is not None, map(dflt.convert_label, labels)))
         if classes:
             ofile.write(id + '\n')

@@ -15,14 +15,13 @@ class MapillaryTrafficSignsDataset:
         self.root = pathlib.Path(root)
         self.transform = transform
         self.target_transform = target_transform
-        self.dataset_type = dataset_type.lower()
 
-        self.class_names = categories
+        self.class_names = ["BACKGROUND"] + categories
         self.convert_label = convert_label
 
         if split_file is None:
-            # split_file = f"{self.root}/splits/{self.dataset_type}.txt"
-            split_file = f"models/{self.dataset_type}_relevant.txt"
+            # split_file = f"{self.root}/splits/{dataset_type}.txt"
+            split_file = f"models/{dataset_type}_relevant_balanced.txt"  # TODO the real deal
         with open(split_file, 'r') as f:
             self.ids = list(map(str.strip, f.readlines()))
 
@@ -41,7 +40,7 @@ class MapillaryTrafficSignsDataset:
                 continue
             b = copy(obj['bbox'])
             boxes.append(np.array([b['xmin'], b['ymin'], b['xmax'], b['ymax']], dtype=np.float32))
-            labels.append(copy(label))
+            labels.append(label + 1)  # +1 for BACKGROUND
 
         boxes = np.array(boxes)
         labels = np.array(labels, dtype=np.int64)
@@ -52,11 +51,11 @@ class MapillaryTrafficSignsDataset:
             image, boxes, labels = self.transform(image, boxes, labels)
         if self.target_transform:
             boxes, labels = self.target_transform(boxes, labels)
+
         return image, boxes, labels
 
     def __getitem__(self, index):
-        image, boxes, labels = self._getitem(index)
-        return image, boxes, labels
+        return self._getitem(index)
 
     def get_annotation(self, index):
         """To conform the eval_ssd implementation that is based on the VOC dataset."""

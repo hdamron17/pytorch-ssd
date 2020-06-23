@@ -52,4 +52,4 @@ def convert_label(label):
     else:
         class_id = -1
 
-    return class_id + 1 if class_id >= 0 else None
+    return class_id if class_id >= 0 else None
