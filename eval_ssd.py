@@ -5,6 +5,7 @@ from vision.ssd.mobilenetv1_ssd_lite import create_mobilenetv1_ssd_lite, create_
 from vision.ssd.squeezenet_ssd_lite import create_squeezenet_ssd_lite, create_squeezenet_ssd_lite_predictor
 from vision.datasets.voc_dataset import VOCDataset
 from vision.datasets.open_images import OpenImagesDataset
+from vision.datasets.mtsd_dataset import MapillaryTrafficSignsDataset
 from vision.utils import box_utils, measurements
 from vision.utils.misc import str2bool, Timer
 import argparse
@@ -12,6 +13,7 @@ import pathlib
 import numpy as np
 import logging
 import sys
+from tqdm import tqdm
 from vision.ssd.mobilenet_v2_ssd_lite import create_mobilenetv2_ssd_lite, create_mobilenetv2_ssd_lite_predictor
 
 
@@ -39,7 +41,7 @@ def group_annotation_by_class(dataset):
     true_case_stat = {}
     all_gt_boxes = {}
     all_difficult_cases = {}
-    for i in range(len(dataset)):
+    for i in tqdm(range(len(dataset))):
         image_id, annotation = dataset.get_annotation(i)
         gt_boxes, classes, is_difficult = annotation
         gt_boxes = torch.from_numpy(gt_boxes)
@@ -129,6 +131,8 @@ if __name__ == '__main__':
         dataset = VOCDataset(args.dataset, is_test=True)
     elif args.dataset_type == 'open_images':
         dataset = OpenImagesDataset(args.dataset, dataset_type="test")
+    elif args.dataset_type == "mtsd":
+        dataset = MapillaryTrafficSignsDataset(args.dataset, dataset_type="test")
 
     true_case_stat, all_gb_boxes, all_difficult_cases = group_annotation_by_class(dataset)
     if args.net == 'vgg16-ssd':
@@ -166,7 +170,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     results = []
-    for i in range(len(dataset)):
+    for i in tqdm(range(len(dataset))):
         print("process image", i)
         timer.start("Load Image")
         image = dataset.get_image(i)
