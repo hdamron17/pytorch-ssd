@@ -6,6 +6,7 @@ from vision.ssd.squeezenet_ssd_lite import create_squeezenet_ssd_lite, create_sq
 from vision.datasets.voc_dataset import VOCDataset
 from vision.datasets.open_images import OpenImagesDataset
 from vision.datasets.mtsd_dataset import MapillaryTrafficSignsDataset
+from vision.datasets.coco_eval import *
 from vision.utils import box_utils, measurements
 from vision.utils.misc import str2bool, Timer
 import argparse
@@ -15,7 +16,9 @@ import logging
 import sys
 from tqdm import tqdm
 from vision.ssd.mobilenet_v2_ssd_lite import create_mobilenetv2_ssd_lite, create_mobilenetv2_ssd_lite_predictor
-
+from pycocotools.cocoeval import COCOeval
+from io import StringIO
+from contextlib import redirect_stdout
 
 parser = argparse.ArgumentParser(description="SSD Evaluation on VOC Dataset.")
 parser.add_argument('--net', default="vgg16-ssd",
@@ -27,10 +30,12 @@ parser.add_argument("--dataset_type", default="voc", type=str,
 parser.add_argument("--dataset", type=str, help="The root directory of the VOC dataset or Open Images dataset.")
 parser.add_argument("--label_file", type=str, help="The label file path.")
 parser.add_argument("--use_cuda", type=str2bool, default=True)
+parser.add_argument("--coco", action="store_true", help="Uses COCO evaluation metrics")
 parser.add_argument("--use_2007_metric", type=str2bool, default=True)
 parser.add_argument("--nms_method", type=str, default="hard")
 parser.add_argument("--iou_threshold", type=float, default=0.5, help="The threshold of Intersection over Union.")
 parser.add_argument("--eval_dir", default="eval_results", type=str, help="The directory to store evaluation results.")
+parser.add_argument("--prefix", default="", type=str, help="File name prefix on generated evaluation results.")
 parser.add_argument('--mb2_width_mult', default=1.0, type=float,
                     help='Width Multiplifier for MobilenetV2')
 args = parser.parse_args()
@@ -170,7 +175,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     results = []
-    for i in tqdm(range(len(dataset))):
+    for i in range(len(dataset)):
         print("process image", i)
         timer.start("Load Image")
         image = dataset.get_image(i)
@@ -188,7 +193,7 @@ if __name__ == '__main__':
     results = torch.cat(results)
     for class_index, class_name in enumerate(class_names):
         if class_index == 0: continue  # ignore background
-        prediction_path = eval_path / f"det_test_{class_name}.txt"
+        prediction_path = eval_path / f"{args.prefix}det_test_{class_name}.txt"
         with open(prediction_path, "w") as f:
             sub = results[results[:, 1] == class_index, :]
             for i in range(sub.size(0)):
@@ -198,24 +203,38 @@ if __name__ == '__main__':
                     image_id + " " + " ".join([str(v) for v in prob_box]),
                     file=f
                 )
-    aps = []
-    print("\n\nAverage Precision Per-class:")
-    for class_index, class_name in enumerate(class_names):
-        if class_index == 0:
-            continue
-        prediction_path = eval_path / f"det_test_{class_name}.txt"
-        ap = compute_average_precision_per_class(
-            true_case_stat[class_index],
-            all_gb_boxes[class_index],
-            all_difficult_cases[class_index],
-            prediction_path,
-            args.iou_threshold,
-            args.use_2007_metric
-        )
-        aps.append(ap)
-        print(f"{class_name}: {ap}")
 
-    print(f"\nAverage Precision Across All Classes:{sum(aps)/len(aps)}")
+    if args.coco:
+        coco_results = results.numpy()[:,[0,3,4,5,6,2,1]]
+        cocoDt = numpy_to_coco(coco_results, class_names)
+        cocoGt = dataset_to_coco(dataset)
+        coco_eval = COCOeval(cocoGt, cocoDt, iouType="bbox")
+        coco_eval.evaluate()
+        coco_eval.accumulate()
+        s = StringIO()
+        with redirect_stdout(s):
+            coco_eval.summarize()
+        summary = s.getvalue()
+        print(summary)
+        with open(eval_path / f"{args.prefix}Summary.txt", "w+") as f:
+            f.write(summary)
+        coco_pr_curve(coco_eval, class_names, "Evaluation Results", str(eval_path / f"{args.prefix}PR"))
+    else:
+        aps = []
+        print("\n\nAverage Precision Per-class:")
+        for class_index, class_name in enumerate(class_names):
+            if class_index == 0:
+                continue
+            prediction_path = eval_path / f"{args.prefix}det_test_{class_name}.txt"
+            ap = compute_average_precision_per_class(
+                true_case_stat[class_index],
+                all_gb_boxes[class_index],
+                all_difficult_cases[class_index],
+                prediction_path,
+                args.iou_threshold,
+                args.use_2007_metric
+            )
+            aps.append(ap)
+            print(f"{class_name}: {ap}")
 
-
-
+        print(f"\nAverage Precision Across All Classes:{sum(aps)/len(aps)}")

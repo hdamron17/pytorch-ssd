@@ -9,12 +9,13 @@ import sys
 
 
 if len(sys.argv) < 5:
-    print('Usage: python run_ssd_example.py <net type>  <model path> <label path> <image path>')
+    print('Usage: python run_ssd_example.py <net type>  <model path> <label path> <image path> [prob threshold]')
     sys.exit(0)
 net_type = sys.argv[1]
 model_path = sys.argv[2]
 label_path = sys.argv[3]
 image_path = sys.argv[4]
+prob_threshold = float(sys.argv[5]) if len(sys.argv) > 5 and len(sys.argv[5]) else 0.2
 
 class_names = [name.strip() for name in open(label_path).readlines()]
 
@@ -49,7 +50,7 @@ else:
 print(image_path)
 orig_image = cv2.imread(image_path)
 image = cv2.cvtColor(orig_image, cv2.COLOR_BGR2RGB)
-boxes, labels, probs = predictor.predict(image, 10, 0.4)
+boxes, labels, probs = predictor.predict(image, 10, prob_threshold)
 
 for i in range(boxes.size(0)):
     box = list(map(int, boxes[i, :]))
