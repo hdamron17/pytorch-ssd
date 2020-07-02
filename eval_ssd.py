@@ -216,12 +216,13 @@ if __name__ == '__main__':
             coco_eval.summarize()
         summary = s.getvalue()
         print(summary)
-        with open(eval_path / f"{args.prefix}Summary.txt", "w+") as f:
+        with open(eval_path / f"{args.prefix}Summary-coco.txt", "w+") as f:
             f.write(summary)
         coco_pr_curve(coco_eval, class_names, "Evaluation Results", str(eval_path / f"{args.prefix}PR"))
     else:
         aps = []
-        print("\n\nAverage Precision Per-class:")
+        s = StringIO()
+        s.write("Average Precision Per-class:\n")
         for class_index, class_name in enumerate(class_names):
             if class_index == 0:
                 continue
@@ -235,6 +236,11 @@ if __name__ == '__main__':
                 args.use_2007_metric
             )
             aps.append(ap)
-            print(f"{class_name}: {ap}")
+            s.write(f"{class_name}: {ap}\n")
 
-        print(f"\nAverage Precision Across All Classes:{sum(aps)/len(aps)}")
+        s.write(f"\nAverage Precision Across All Classes:{sum(aps)/len(aps)}\n")
+
+        summary = s.getvalue()
+        print("\n\n%s" % summary)
+        with open(eval_path / f"{args.prefix}Summary-voc.txt", "w+") as f:
+            f.write(summary)
