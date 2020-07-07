@@ -208,7 +208,7 @@ if __name__ == '__main__':
                 )
 
     if args.coco:
-        println("COCO Evaluation\n===============")
+        print("\nCOCO Evaluation\n===============\n")
         coco_results = results.numpy()[:,[0,3,4,5,6,2,1]]
         cocoDt = numpy_to_coco(coco_results, class_names)
         cocoGt = dataset_to_coco(dataset)
@@ -224,7 +224,7 @@ if __name__ == '__main__':
             f.write(summary)
         coco_pr_curve(coco_eval, class_names, "Evaluation Results", str(eval_path / f"{args.prefix}PR"))
     if args.voc:
-        println("VOC Evaluation\n==============")
+        print("VOC Evaluation\n==============")
         aps = []
         s = StringIO()
         s.write("Average Precision Per-class:\n")
