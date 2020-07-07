@@ -31,6 +31,7 @@ parser.add_argument("--dataset", type=str, help="The root directory of the VOC d
 parser.add_argument("--label_file", type=str, help="The label file path.")
 parser.add_argument("--use_cuda", type=str2bool, default=True)
 parser.add_argument("--coco", action="store_true", help="Uses COCO evaluation metrics")
+parser.add_argument("--voc", action="store_true", help="Uses VOC evaluation metrics (default)")
 parser.add_argument("--use_2007_metric", type=str2bool, default=True)
 parser.add_argument("--nms_method", type=str, default="hard")
 parser.add_argument("--iou_threshold", type=float, default=0.5, help="The threshold of Intersection over Union.")
@@ -41,6 +42,8 @@ parser.add_argument('--mb2_width_mult', default=1.0, type=float,
 args = parser.parse_args()
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() and args.use_cuda else "cpu")
 
+if not any((args.voc, args.coco)):
+    args.voc = True
 
 def group_annotation_by_class(dataset):
     true_case_stat = {}
@@ -205,6 +208,7 @@ if __name__ == '__main__':
                 )
 
     if args.coco:
+        println("COCO Evaluation\n===============")
         coco_results = results.numpy()[:,[0,3,4,5,6,2,1]]
         cocoDt = numpy_to_coco(coco_results, class_names)
         cocoGt = dataset_to_coco(dataset)
@@ -219,7 +223,8 @@ if __name__ == '__main__':
         with open(eval_path / f"{args.prefix}Summary-coco.txt", "w+") as f:
             f.write(summary)
         coco_pr_curve(coco_eval, class_names, "Evaluation Results", str(eval_path / f"{args.prefix}PR"))
-    else:
+    if args.voc:
+        println("VOC Evaluation\n==============")
         aps = []
         s = StringIO()
         s.write("Average Precision Per-class:\n")
