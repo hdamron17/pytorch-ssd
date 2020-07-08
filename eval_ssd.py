@@ -39,6 +39,7 @@ parser.add_argument("--eval_dir", default="eval_results", type=str, help="The di
 parser.add_argument("--prefix", default="", type=str, help="File name prefix on generated evaluation results.")
 parser.add_argument('--mb2_width_mult', default=1.0, type=float,
                     help='Width Multiplifier for MobilenetV2')
+parser.add_argument("--no_plots", action="store_true", help="Disables plotting COCO PR curves")
 args = parser.parse_args()
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() and args.use_cuda else "cpu")
 
@@ -222,9 +223,10 @@ if __name__ == '__main__':
         print(summary)
         with open(eval_path / f"{args.prefix}Summary-coco.txt", "w+") as f:
             f.write(summary)
-        coco_pr_curve(coco_eval, class_names, "Evaluation Results", str(eval_path / f"{args.prefix}PR"))
+        if not args.no_plots:
+            coco_pr_curve(coco_eval, class_names, "Evaluation Results", str(eval_path / f"{args.prefix}PR"))
     if args.voc:
-        print("VOC Evaluation\n==============")
+        print("\nVOC Evaluation\n==============\n")
         aps = []
         s = StringIO()
         s.write("Average Precision Per-class:\n")
@@ -246,6 +248,6 @@ if __name__ == '__main__':
         s.write(f"\nAverage Precision Across All Classes:{sum(aps)/len(aps)}\n")
 
         summary = s.getvalue()
-        print("\n\n%s" % summary)
+        print(summary)
         with open(eval_path / f"{args.prefix}Summary-voc.txt", "w+") as f:
             f.write(summary)
